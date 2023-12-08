@@ -1,60 +1,36 @@
 import fs from "node:fs/promises";
+import { lcm } from "./utils/math";
 
 async function run() {
-  const [instructions, coords] = (
-    await fs.readFile("./day8.input", "utf8")
-  ).split("\n\n");
+  const data = (await fs.readFile("./day8.input", "utf8")).split("\n\n");
 
-  const map = new Map();
-  coords.split("\n").forEach((line) => {
-    const [key, value] = line.split(" = ");
-    const [left, right] = value.replace("(", "").replace(")", "").split(", ");
-    map.set(key, [left, right]);
+  const turns = data[0].split("");
+  const instructions = data[1].split("\n").map((line) => {
+    const [from, left, right] = line.match(/[A-Z]+/g);
+    return [from, [left, right]];
   });
 
-  // let part1Count = part1(instructions, map);
-  // console.log("Part 1: ", part1Count);
+  const points = Object.fromEntries(instructions);
+  const starts = instructions.filter((i) => i[0][2] === "A").map((el) => el[0]);
+  function solve(position = "AAA") {
+    let steps = 0;
 
-  let part2Count = part2(instructions, map);
-}
-
-run();
-function part1(instructions: string, map: Map<any, any>) {
-  let count = 0;
-  let currentPosition = "AAA";
-
-  while (currentPosition !== "ZZZ") {
-    const nextInstruction = instructions[count % instructions.length];
-    const currentArray = map.get(currentPosition);
-    currentPosition =
-      nextInstruction === "L" ? currentArray[0] : currentArray[1];
-    count++;
-  }
-  return count;
-}
-
-function part2(instructions: string, map: Map<any, any>) {
-  let positions = [...map.keys()].filter((val: string) => val.endsWith("A"));
-  console.log(positions.length, positions);
-  let count = 0;
-  let finished = false;
-
-  while (!finished) {
-    const step = instructions[count % instructions.length];
-    positions = positions.map((current) => {
-      const currentArray = map.get(current);
-      return step === "L" ? currentArray[0] : currentArray[1];
-    });
-    count++;
-
-    if (count % 10000000 === 0) {
-      console.log(count, positions);
+    while (true) {
+      const turn = turns[steps++ % turns.length];
+      position = points[position][turn === "L" ? 0 : 1];
+      if (position[2] === "Z") {
+        break;
+      }
     }
-
-    finished =
-      positions.filter((position) => position.endsWith("Z")).length ===
-      positions.length;
+    return steps;
   }
 
-  console.log(count, positions);
+  console.log("Part 1", solve());
+  console.log(
+    "Part 2",
+    starts.map(solve).reduce((a, b) => lcm(a, b), 1)
+  );
+  console.timeEnd();
 }
+console.time();
+run();
